@@ -579,6 +579,7 @@ export class TelemetryEngine {
 export function normalizeMetadata(metadata = {}) {
   const {
     telemetry_version = "",
+    telemetry_name = "",
     chat_version = "",
     record_type = "",
     uniform_sampled = false,
@@ -590,6 +591,7 @@ export function normalizeMetadata(metadata = {}) {
 
   return {
     telemetry_version,
+    telemetry_name,
     chat_version,
     record_type,
     uniform_sampled,

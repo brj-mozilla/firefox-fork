@@ -812,6 +812,7 @@ add_task(async function test_normalizeMetadata_defaults() {
 
   Assert.deepEqual(result, {
     telemetry_version: "",
+    telemetry_name: "",
     chat_version: "",
     record_type: "",
     uniform_sampled: false,
@@ -825,6 +826,7 @@ add_task(async function test_normalizeMetadata_defaults() {
 add_task(async function test_normalizeMetadata_scales_probabilities_and_formats_triggers() {
   const result = normalizeMetadata({
     telemetry_version: "1",
+    telemetry_name: "hello",
     chat_version: "chat-v2",
     record_type: "terminal",
     uniform_sampled: true,
@@ -836,6 +838,7 @@ add_task(async function test_normalizeMetadata_scales_probabilities_and_formats_
 
   Assert.deepEqual(result, {
     telemetry_version: "1",
+    telemetry_name: "hello",
     chat_version: "chat-v2",
     record_type: "terminal",
     uniform_sampled: true,
@@ -876,6 +879,7 @@ add_task(async function test_submitTelemetryResult_records_one_event_per_attribu
       "fake-model",
       {
         telemetry_version: "1",
+        telemetry_name: "hello",
         chat_version: "chat-v1",
         record_type: "terminal",
         uniform_sampled: true,
@@ -899,6 +903,7 @@ add_task(async function test_submitTelemetryResult_records_one_event_per_attribu
       soft.equal(first.model, "fake-model");
       soft.equal(first.turn_number, 3);
       soft.equal(first.telemetry_version, "1");
+      soft.equal(first.telemetry_name, "hello");
       soft.equal(first.chat_version, "chat-v1");
       soft.equal(first.record_type, "terminal");
       soft.equal(first.uniform_sampled, true);
