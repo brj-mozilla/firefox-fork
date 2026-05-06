@@ -406,15 +406,15 @@ export class TelemetryEngine {
    * @returns {Trigger[]}
    */
 
-  async _fetchRecords(collection, fallback) {
-    // try {
-    //   const client = lazy.RemoteSettings(collection);
-    //   return await client.get();
-    // } catch (e) {
-    //   console.error("Telemetry: failed to fetch records:", e);
-    //   return fallback;
-    // }
-    return fallback;
+  async _fetchRecords(collection, fallback=[]) {
+    try {
+      const client = lazy.RemoteSettings(collection);
+      const records = await client.get();
+      return records
+    } catch (e) {
+      console.error("Telemetry: failed to fetch records:", e);
+      return fallback;
+    }
   }
 
   async getTriggerDefinitions() {
@@ -424,7 +424,6 @@ export class TelemetryEngine {
 
     const triggerRecords = await this._fetchRecords(
       RS_TELEMETRY_TRIGGERS_COLLECTION,
-      TRIGGER_RECORDS
     );
 
     this._triggers = triggerRecords
