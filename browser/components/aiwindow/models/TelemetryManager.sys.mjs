@@ -38,7 +38,7 @@ export class TelemetryScheduler {
   static #instance = null;
 
   /**
-   * Initializes the scheduler if the relevant pref is enabled.
+   * Initializes the scheduler.
    *
    * This should be called from startup/feature initialization code.
    *
@@ -170,7 +170,7 @@ export class TelemetryScheduler {
         this.#running = false;
     }
    }
-   
+
   destroy() {
     this.#stopInterval();
     this.#destroyed = true;
