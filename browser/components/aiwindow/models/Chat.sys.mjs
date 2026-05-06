@@ -235,10 +235,9 @@ Object.assign(Chat, {
             .then(results => {
               submitTelemetryResult(
                 results,
-                conversation.id,
-                this.modelId,
-                conversation.currentTurnIndex(),
-                "midChat"
+                conversation,
+                engineInstance?.model,
+                {"record_type": "midChat"},
               );
             })
             .catch(e => console.error("Telemetry run failed:", e));
