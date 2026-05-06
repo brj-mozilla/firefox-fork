@@ -237,7 +237,9 @@ Object.assign(Chat, {
                 results,
                 conversation,
                 engineInstance?.model,
-                {"telemetry_name": "midChat"},
+                {
+                  "record_type": "midChat",
+                },
               );
             })
             .catch(e => console.error("Telemetry run failed:", e));

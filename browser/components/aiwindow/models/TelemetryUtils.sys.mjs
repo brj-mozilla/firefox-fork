@@ -579,7 +579,6 @@ export class TelemetryEngine {
 export function normalizeMetadata(metadata = {}) {
   const {
     telemetry_version = "",
-    telemetry_name = "",
     chat_version = "",
     record_type = "",
     uniform_sampled = false,
@@ -591,7 +590,6 @@ export function normalizeMetadata(metadata = {}) {
 
   return {
     telemetry_version,
-    telemetry_name,
     chat_version,
     record_type,
     uniform_sampled,
@@ -614,19 +612,22 @@ export function submitTelemetryResult(
   modelId,
   metadata
 ) {
-  const result_object = telemetryResults[0];
   const normalized_metadata = normalizeMetadata(metadata);
 
-  for (const [attributeName, attributeValue] of Object.entries(
-    result_object.result
-  )) {
-    Glean.smartWindow.llmResponseTelemetry.record({
-      chat_id: conversation.id,
-      model: modelId,
-      turn_number: conversation.currentTurnIndex(),
-      ...normalized_metadata,
-      attribute_name: attributeName,
-      attribute_value: String(attributeValue ?? UNKNOWN),
-    });
+  for (const resultObject of telemetryResults ?? []) {
+    const result = resultObject?.result ?? {};
+    const telemetry_name = resultObject?.telemetry_name ?? "";
+
+    for (const [attributeName, attributeValue] of Object.entries(result)) {
+      Glean.smartWindow.llmResponseTelemetry.record({
+        ...normalized_metadata,
+        chat_id: conversation.id,
+        model: modelId,
+        turn_number: conversation.currentTurnIndex(),
+        telemetry_name: telemetry_name,
+        attribute_name: attributeName,
+        attribute_value: String(attributeValue ?? UNKNOWN),
+      });
+    }
   }
 }
