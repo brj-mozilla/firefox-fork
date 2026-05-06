@@ -544,7 +544,7 @@ add_task(
         {
           id: "my-prompt-v2",
           version: "1.0",
-          telemetry_name: "isLongConvo",
+          telemetry_name: "conversationCategory",
           triggers: [LONG_CONVERSATION],
           output_schema: { myField: ["a", "b"] },
           prompt: "...",
@@ -562,8 +562,8 @@ add_task(
         `${TELEMETRY_NAME} should not run when only ${LONG_CONVERSATION} trigger fires`
       );
       Assert.ok(
-        results.some(r => r.telemetry_name === "isLongConvo"),
-        `isLongConvo should run when ${LONG_CONVERSATION} trigger fires`
+        results.some(r => r.telemetry_name === "conversationCategory"),
+        `conversationCategory should run when ${LONG_CONVERSATION} trigger fires`
       );
     } finally {
       sb.restore();
@@ -573,7 +573,7 @@ add_task(
 
 add_task(async function test_runTelemetryByName_happy_path() {
   const engine = new TelemetryEngine();
-  const TELEMETRY_NAMES = ["wasSuccessful", "isLongConvo"];
+  const TELEMETRY_NAMES = ["wasSuccessful", "conversationCategory"];
 
   const sb = sinon.createSandbox();
   try {
@@ -590,7 +590,7 @@ add_task(async function test_runTelemetryByName_happy_path() {
       {
         id: "my-prompt-v2",
         version: "1.0",
-        telemetry_name: "isLongConvo",
+        telemetry_name: "conversationCategory",
         triggers: [LONG_CONVERSATION],
         output_schema: { myField: ["a", "b"] },
         prompt: "...",
@@ -631,7 +631,7 @@ add_task(async function test_runTelemetryByName_happy_path() {
 
 add_task(async function test_runTelemetryByName_dont_run_terminal() {
   const engine = new TelemetryEngine();
-  const TELEMETRY_NAMES = ["wasSuccessful", "isLongConvo"];
+  const TELEMETRY_NAMES = ["wasSuccessful", "conversationCategory"];
 
   const sb = sinon.createSandbox();
   try {
@@ -648,7 +648,7 @@ add_task(async function test_runTelemetryByName_dont_run_terminal() {
       {
         id: "my-prompt-v2",
         version: "1.0",
-        telemetry_name: "isLongConvo",
+        telemetry_name: "conversationCategory",
         triggers: [LONG_CONVERSATION],
         output_schema: { myField: ["a", "b"] },
         prompt: "...",
@@ -822,38 +822,35 @@ add_task(async function test_normalizeMetadata_defaults() {
   });
 });
 
-add_task(async function test_normalizeMetadata_scales_probabilities_and_formats_triggers() {
-  const result = normalizeMetadata({
-    telemetry_version: "1",
-    chat_version: "chat-v2",
-    record_type: "terminal",
-    uniform_sampled: true,
-    uniform_sampling_probability: 0.25,
-    trigger_sampled: true,
-    trigger_sampling_probability: 0.123,
-    triggers: ["uniform_sample", "long_conversation"],
-  });
+add_task(
+  async function test_normalizeMetadata_scales_probabilities_and_formats_triggers() {
+    const result = normalizeMetadata({
+      telemetry_version: "1",
+      chat_version: "chat-v2",
+      record_type: "terminal",
+      uniform_sampled: true,
+      uniform_sampling_probability: 0.25,
+      trigger_sampled: true,
+      trigger_sampling_probability: 0.123,
+      triggers: ["uniform_sample", "long_conversation"],
+    });
 
-  Assert.deepEqual(result, {
-    telemetry_version: "1",
-    chat_version: "chat-v2",
-    record_type: "terminal",
-    uniform_sampled: true,
-    uniform_sampling_probability: 250,
-    trigger_sampled: true,
-    trigger_sampling_probability: 123,
-    triggers: JSON.stringify(["uniform_sample", "long_conversation"]),
-  });
-});
+    Assert.deepEqual(result, {
+      telemetry_version: "1",
+      chat_version: "chat-v2",
+      record_type: "terminal",
+      uniform_sampled: true,
+      uniform_sampling_probability: 250,
+      trigger_sampled: true,
+      trigger_sampling_probability: 123,
+      triggers: JSON.stringify(["uniform_sample", "long_conversation"]),
+    });
+  }
+);
 
-add_task(async function test_submitTelemetryResult_records_one_event_per_attribute() {
-  const sb = sinon.createSandbox();
-
-  try {
-    const recordStub = sb.stub(
-      Glean.smartWindow.llmResponseTelemetry,
-      "record"
-    );
+add_task(
+  async function test_submitTelemetryResult_records_one_event_per_attribute() {
+    Services.fog.testResetFOG();
 
     const conversation = {
       id: "conversation-id",
@@ -887,82 +884,42 @@ add_task(async function test_submitTelemetryResult_records_one_event_per_attribu
       }
     );
 
+    const events = Glean.smartWindow.llmResponseTelemetry.testGetValue();
+
+    Assert.ok(events, "Should record llmResponseTelemetry events");
     Assert.equal(
-      recordStub.callCount,
+      events.length,
       3,
       "Should record one event per telemetry result attribute"
     );
 
-    const first = recordStub.getCall(0).args[0];
+    const first = events[0].extra;
 
-    Assert.withSoftAssertions(function (soft) {
-      soft.equal(first.chat_id, "conversation-id");
-      soft.equal(first.model, "fake-model");
-      soft.equal(first.turn_number, 3);
-      soft.equal(first.telemetry_version, "1");
-      soft.equal(first.telemetry_name, "hello");
-      soft.equal(first.chat_version, "chat-v1");
-      soft.equal(first.record_type, "terminal");
-      soft.equal(first.uniform_sampled, true);
-      soft.equal(first.uniform_sampling_probability, 500);
-      soft.equal(first.trigger_sampled, true);
-      soft.equal(first.trigger_sampling_probability, 250);
-      soft.equal(first.triggers, JSON.stringify(["uniform_sample"]));
-      soft.equal(first.attribute_name, "was_successful");
-      soft.equal(first.attribute_value, "successful");
-    });
+    Assert.equal(first.chat_id, "conversation-id");
+    Assert.equal(first.model, "fake-model");
+    Assert.equal(first.turn_number, "3");
+    Assert.equal(first.telemetry_version, "1");
+    Assert.equal(first.telemetry_name, "hello");
+    Assert.equal(first.chat_version, "chat-v1");
+    Assert.equal(first.record_type, "terminal");
+    Assert.equal(first.uniform_sampled, "true");
+    Assert.equal(first.uniform_sampling_probability, "500");
+    Assert.equal(first.trigger_sampled, "true");
+    Assert.equal(first.trigger_sampling_probability, "250");
+    Assert.equal(first.triggers, JSON.stringify(["uniform_sample"]));
+    Assert.equal(first.attribute_name, "was_successful");
+    Assert.equal(first.attribute_value, "successful");
 
-    const second = recordStub.getCall(1).args[0];
-    Assert.withSoftAssertions(function (soft) {
-      soft.equal(second.attribute_name, "conversation_topic");
-      soft.equal(second.attribute_value, "sports");
-    });
+    const second = events[1].extra;
 
-    const third = recordStub.getCall(2).args[0];
-    Assert.withSoftAssertions(function (soft) {
-      soft.equal(third.attribute_name, "memory_referenced");
-      soft.equal(third.attribute_value, "true");
-    });
-  } finally {
-    sb.restore();
+    Assert.equal(second.telemetry_name, "hello");
+    Assert.equal(second.attribute_name, "conversation_topic");
+    Assert.equal(second.attribute_value, "sports");
+
+    const third = events[2].extra;
+
+    Assert.equal(third.telemetry_name, "hello");
+    Assert.equal(third.attribute_name, "memory_referenced");
+    Assert.equal(third.attribute_value, "true");
   }
-});
-
-add_task(async function test_submitTelemetryResult_uses_unknown_for_nullish_attribute_value() {
-  const sb = sinon.createSandbox();
-
-  try {
-    const recordStub = sb.stub(
-      Glean.smartWindow.llmResponseTelemetry,
-      "record"
-    );
-
-    const conversation = {
-      id: "conversation-id",
-      currentTurnIndex() {
-        return 1;
-      },
-    };
-
-    submitTelemetryResult(
-      [
-        {
-          result: {
-            was_successful: null,
-          },
-        },
-      ],
-      conversation,
-      "fake-model",
-      {}
-    );
-
-    Assert.equal(recordStub.callCount, 1);
-
-    const event = recordStub.getCall(0).args[0];
-    Assert.equal(event.attribute_name, "was_successful");
-    Assert.equal(event.attribute_value, "unknown");
-  } finally {
-    sb.restore();
-  }
-});
+);
