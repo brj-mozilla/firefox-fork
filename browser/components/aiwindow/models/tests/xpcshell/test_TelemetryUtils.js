@@ -544,7 +544,7 @@ add_task(
         {
           id: "my-prompt-v2",
           version: "1.0",
-          telemetry_name: "isLongConvo",
+          telemetry_name: "conversationCategory",
           triggers: [LONG_CONVERSATION],
           output_schema: { myField: ["a", "b"] },
           prompt: "...",
@@ -562,8 +562,8 @@ add_task(
         `${TELEMETRY_NAME} should not run when only ${LONG_CONVERSATION} trigger fires`
       );
       Assert.ok(
-        results.some(r => r.telemetry_name === "isLongConvo"),
-        `isLongConvo should run when ${LONG_CONVERSATION} trigger fires`
+        results.some(r => r.telemetry_name === "conversationCategory"),
+        `conversationCategory should run when ${LONG_CONVERSATION} trigger fires`
       );
     } finally {
       sb.restore();
@@ -573,7 +573,7 @@ add_task(
 
 add_task(async function test_runTelemetryByName_happy_path() {
   const engine = new TelemetryEngine();
-  const TELEMETRY_NAMES = ["wasSuccessful", "isLongConvo"];
+  const TELEMETRY_NAMES = ["wasSuccessful", "conversationCategory"];
 
   const sb = sinon.createSandbox();
   try {
@@ -590,7 +590,7 @@ add_task(async function test_runTelemetryByName_happy_path() {
       {
         id: "my-prompt-v2",
         version: "1.0",
-        telemetry_name: "isLongConvo",
+        telemetry_name: "conversationCategory",
         triggers: [LONG_CONVERSATION],
         output_schema: { myField: ["a", "b"] },
         prompt: "...",
@@ -631,7 +631,7 @@ add_task(async function test_runTelemetryByName_happy_path() {
 
 add_task(async function test_runTelemetryByName_dont_run_terminal() {
   const engine = new TelemetryEngine();
-  const TELEMETRY_NAMES = ["wasSuccessful", "isLongConvo"];
+  const TELEMETRY_NAMES = ["wasSuccessful", "conversationCategory"];
 
   const sb = sinon.createSandbox();
   try {
@@ -648,7 +648,7 @@ add_task(async function test_runTelemetryByName_dont_run_terminal() {
       {
         id: "my-prompt-v2",
         version: "1.0",
-        telemetry_name: "isLongConvo",
+        telemetry_name: "conversationCategory",
         triggers: [LONG_CONVERSATION],
         output_schema: { myField: ["a", "b"] },
         prompt: "...",
