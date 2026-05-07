@@ -33,6 +33,7 @@ import {
   TelemetryEngine,
   submitTelemetryResult,
 } from "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs";
+import { ChatStore } from "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs";
 
 // Hard limit on how many times run_search can execute per conversation turn.
 // Prevents infinite tool-call loops when the model repeatedly requests search.
@@ -226,21 +227,36 @@ Object.assign(Chat, {
         logConversationStream(currentTurn, "STREAM END");
         // We only run telemetry on our own endpoints
         if (!openAIEngine.hasCustomEndpoint()) {
-          console.warn("TRIGGERS");
+          ChatStore.markLLMTelemetryUnprocessed(conversation.id).catch(e =>
+            console.error("Failed to mark telemetry unprocessed:", e)
+          );
+
           const telemetryEngine = new TelemetryEngine();
           const triggers = await telemetryEngine.getTriggers(conversation);
-          console.warn("TRIGGERS: ", triggers);
           telemetryEngine
             .runTelemetry(triggers, conversation)
             .then(results => {
+              if (!results.length) {
+                return;
+              }
               submitTelemetryResult(
                 results,
                 conversation,
                 engineInstance?.model,
-                {
-                  "record_type": "midChat",
-                },
+                { record_type: "midChat" }
               );
+              const turnIndex = conversation.currentTurnIndex();
+              const prompts = Object.fromEntries(
+                results.map(r => [r.telemetry_name, turnIndex])
+              );
+              const probabilities = Object.fromEntries(
+                results.map(r => [r.telemetry_name, r.samplingProbability])
+              );
+              ChatStore.updateLLMTelemetryRecord(
+                conversation.id,
+                prompts,
+                probabilities
+              ).catch(e => console.error("Failed to update telemetry record:", e));
             })
             .catch(e => console.error("Telemetry run failed:", e));
         }

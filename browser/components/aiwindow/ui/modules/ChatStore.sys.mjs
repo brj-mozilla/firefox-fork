@@ -1106,6 +1106,7 @@ class ChatStore {
     await this.#conn
       .executeCached(MARK_LLM_TELEMETRY_UNPROCESSED, {
         conv_id: conversationId,
+        processed_time: Date.now(),
       })
       .catch(e => {
         lazy.log.error(
@@ -1183,8 +1184,8 @@ class ChatStore {
         };
 
         const mergedProbabilities = {
-          ...existingProbabilities,
           ...(probabilities ?? {}),
+          ...existingProbabilities,
         };
 
         await this.#conn.executeCached(UPSERT_LLM_TELEMETRY, {
