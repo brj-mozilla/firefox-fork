@@ -3,6 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+import { UNIFORM_SAMPLING_NAME } from "moz-src:///browser/components/aiwindow/models/TelemetryUtils.sys.mjs";
+
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   ChatStore:
@@ -146,13 +148,15 @@ export class TelemetryScheduler {
         for ( const conversationObj of conversationsToRun ) {
             const telemetryNames = Object.keys(conversationObj.telemetryJobs);
             const conversation = await lazy.ChatStore.findConversationById(conversationObj.convId);
-            const results = await telemetryEngine.runTelemetryByName(telemetryNames, conversation);
+            const results = (await telemetryEngine.runTelemetryByName(telemetryNames, conversation))
+              .map(r => ({ ...r, samplingProbability: conversationObj.telemetryProbs[r.telemetry_name] ?? 0 }));
             lazy.submitTelemetryResult(
                     results,
-                    conversationObj.convId,
+                    conversation,
                     conversationObj.modelId,
-                    conversationObj.turnIndex,
-                    "endOfConversation"
+                    { record_type: "endOfConversation",
+                      uniform_sampling_probability: conversationObj.telemetryProbs[UNIFORM_SAMPLING_NAME] ?? 0
+                    } 
             );
             await lazy.ChatStore.markLLMTelemetryProcessed(
                 conversationObj.convId,

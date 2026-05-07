@@ -257,7 +257,7 @@ export class TelemetryEngine {
           lazy.console.debug("checking:", trigger.name, "-> skip (already checked)");
         continue;
       }
-      lazy.console.debug("checking:", trigger.name, "-> evaluating");
+      lazy.console.debug("checking:", trigger.name, "-> evaluating", conversation._telemetryUniformSample, conversation.currentTurnIndex?.());
       if (trigger.check(conversation)) {
         conversation._checkedTelemetryTriggers.add(trigger.name);
         if (this._getRandom() < trigger.samplingProbability) {
@@ -265,6 +265,7 @@ export class TelemetryEngine {
           fired.push(trigger);
           if (trigger.name == UNIFORM_SAMPLING_NAME) {
             conversation._telemetryUniformSample = true;
+            conversation._telemetryUniformProbability = trigger.samplingProbability;
           }
         }
       }
@@ -406,11 +407,14 @@ export function submitTelemetryResult(
   modelId,
   metadata
 ) {
-  const normalized_metadata = normalizeMetadata(metadata);
 
   for (const resultObject of telemetryResults ?? []) {
     const result = resultObject?.result ?? {};
     const telemetry_name = resultObject?.telemetry_name ?? "";
+    const normalized_metadata = normalizeMetadata(
+      { ...metadata, 
+        trigger_sampling_probability: resultObject?.samplingProbability ?? 0.0}
+      );
 
     for (const [attributeName, attributeValue] of Object.entries(result)) {
       Glean.smartWindow.llmResponseTelemetry.record({

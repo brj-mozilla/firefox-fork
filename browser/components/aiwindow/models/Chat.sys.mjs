@@ -243,7 +243,8 @@ Object.assign(Chat, {
                 results,
                 conversation,
                 engineInstance?.model,
-                { record_type: "midChat" }
+                { record_type: "midChat",
+                  uniform_sampling_probability: conversation._telemetryUniformProbability }
               );
               const turnIndex = conversation.currentTurnIndex();
               const prompts = Object.fromEntries(
