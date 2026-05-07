@@ -361,7 +361,7 @@ export class TelemetryEngine {
       try {
         const engine = await TelemetryPromptEngine.build(record);
         const result = await engine.run(conversation);
-        results.push({ telemetry_name: record.telemetry_name, result });
+        results.push({ telemetry_name: record.telemetry_name, result, telemetry_version: record.version });
       } catch (e) {
         lazy.console.error(`Telemetry: evaluation failed for ${record.feature}:`, e);
       }
@@ -373,25 +373,19 @@ export class TelemetryEngine {
 
 export function normalizeMetadata(metadata = {}) {
   const {
-    telemetry_version = "",
     chat_version = "",
     record_type = "",
-    uniform_sampled = false,
     uniform_sampling_probability = 0,
-    trigger_sampled = false,
     trigger_sampling_probability = 0,
     triggers = [],
   } = metadata;
 
   return {
-    telemetry_version,
     chat_version,
     record_type,
-    uniform_sampled,
     uniform_sampling_probability: Math.round(
       uniform_sampling_probability * 1000
     ),
-    trigger_sampled,
     trigger_sampling_probability: Math.round(
       trigger_sampling_probability * 1000
     ),
@@ -409,22 +403,25 @@ export function submitTelemetryResult(
 ) {
 
   for (const resultObject of telemetryResults ?? []) {
-    const result = resultObject?.result ?? {};
-    const telemetry_name = resultObject?.telemetry_name ?? "";
     const normalized_metadata = normalizeMetadata(
       { ...metadata, 
-        trigger_sampling_probability: resultObject?.samplingProbability ?? 0.0}
+        trigger_sampling_probability: resultObject?.samplingProbability ?? 0.0,
+      }
       );
 
+    const result = resultObject?.result ?? {};
     for (const [attributeName, attributeValue] of Object.entries(result)) {
       Glean.smartWindow.llmResponseTelemetry.record({
         ...normalized_metadata,
         chat_id: conversation.id,
         model: modelId,
         turn_number: conversation.currentTurnIndex(),
-        telemetry_name: telemetry_name,
+        telemetry_name: resultObject?.telemetry_name ?? "",
         attribute_name: attributeName,
         attribute_value: String(attributeValue ?? UNKNOWN),
+        uniform_sampled: (metadata.triggers ?? []).includes(UNIFORM_SAMPLING_NAME),
+        trigger_sampled: (metadata.triggers ?? []).some(t => t !== UNIFORM_SAMPLING_NAME),
+        telemetry_version: resultObject?.telemetry_version ?? ""
       });
     }
   }
