@@ -818,7 +818,7 @@ add_task(async function test_normalizeMetadata_defaults() {
     uniform_sampling_probability: 0,
     trigger_sampled: false,
     trigger_sampling_probability: 0,
-    triggers: "",
+    triggers: "[]",
   });
 });
 
@@ -865,6 +865,7 @@ add_task(async function test_submitTelemetryResult_records_one_event_per_attribu
     submitTelemetryResult(
       [
         {
+          telemetry_name: "hello",
           result: {
             was_successful: "successful",
             conversation_topic: "sports",
@@ -899,6 +900,7 @@ add_task(async function test_submitTelemetryResult_records_one_event_per_attribu
       soft.equal(first.model, "fake-model");
       soft.equal(first.turn_number, 3);
       soft.equal(first.telemetry_version, "1");
+      soft.equal(first.telemetry_name, "hello");
       soft.equal(first.chat_version, "chat-v1");
       soft.equal(first.record_type, "terminal");
       soft.equal(first.uniform_sampled, true);

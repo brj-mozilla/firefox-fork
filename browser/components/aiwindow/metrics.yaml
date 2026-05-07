@@ -1099,6 +1099,10 @@ smart_window:
         type: string
         description: >
           Version of telemetry
+      telemetry_name:
+        type: string
+        description: >
+          Name of telemetry
       record_type:
         type: string
         description: >
