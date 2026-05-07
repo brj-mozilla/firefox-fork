@@ -196,6 +196,9 @@ export const FEATURES = {
   "memories-message-classification-system": {
     engineId: "smart-openai-memories-usage",
   },
+  "llm-telemetry": {
+    engineId: "llm-telemetry-engine",
+  },
 };
 
 /**
