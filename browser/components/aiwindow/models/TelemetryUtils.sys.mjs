@@ -14,6 +14,7 @@ import {
 
 const lazy = XPCOMUtils.declareLazy({
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "console", function () {
@@ -45,8 +46,8 @@ export const TRIGGER_CHECK_STRATEGIES = {
 };
 
 // Probability that a turn-1 conversation is flagged for uniform sampling.
-const UNIFORM_SAMPLING_NAME = "uniform_sample";
-const TELEMETRY_PURPOSE = "telemetry";
+export const UNIFORM_SAMPLING_NAME = "uniform_sample";
+export const TELEMETRY_PURPOSE = "telemetry";
 const UNKNOWN = "unknown";
 
 const RS_TELEMETRY_PROMPTS_COLLECTION = "ai-window-telemetry-prompts";
@@ -358,14 +359,31 @@ export class TelemetryEngine {
   async _runPrompts(promptsToRun, conversation) {
     const results = [];
     for (const record of promptsToRun) {
-      try {
-        const engine = await TelemetryPromptEngine.build(record);
-        const result = await engine.run(conversation);
-        results.push({ telemetry_name: record.telemetry_name, result, telemetry_version: record.version });
-      } catch (e) {
-        lazy.console.error(`Telemetry: evaluation failed for ${record.feature}:`, e);
+      let lastError; 
+      for (let attempt = 0; attempt < 3; attempt ++) {
+        if ( attempt > 0 ){
+          await new Promise(resolve => lazy.setTimeout(resolve, 2000 * attempt));
+        }
+        try {
+          const engine = await TelemetryPromptEngine.build(record);
+          const result = await engine.run(conversation);
+          results.push({ telemetry_name: record.telemetry_name, result, telemetry_version: record.version });
+          lastError=null;
+          break;
+        } catch (e) {
+          if (e.message?.includes("429")) {  // trying to catch 429 / rate-limiting errors; backoff and retry
+            lastError = e;
+          } else {
+            lazy.console.error(`Telemetry: evaluation failed for ${record.telemetry_name}:`, e); // other errors fail
+            break;
+          }
+        }
+      }
+      if ( lastError ){
+        lazy.console.error(`Encountered error running batch telemetry job: ${e}`)
       }
     }
+
     lazy.console.debug("Returning!", results);
     return results;
   }

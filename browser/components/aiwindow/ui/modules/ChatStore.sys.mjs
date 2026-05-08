@@ -1277,6 +1277,7 @@ class ChatStore {
   }
 
   async getConversationsForTelemetry() {
+  await this.#ensureDatabase();
   const rows = await this.#conn
     .executeCached(GET_CONVERSATIONS_FOR_TELEMETRY)
     .catch(e => {

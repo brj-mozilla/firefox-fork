@@ -88,8 +88,9 @@ export class TelemetryScheduler {
   }
 
   /**
-   * Starts the interval that periodically evaluates history drift and
-   * potentially triggers memory generation.
+   * Starts the interval that periodically evaluates to check to see
+   * if SCHEDULER_COOLDOWN_MS has passed since running end-of-conversation 
+   * telemetry
    *
    * @throws {Error} If an interval is already running.
    */
@@ -143,8 +144,10 @@ export class TelemetryScheduler {
     try {
         // run telemetry
         const conversationsToRun = await lazy.ChatStore.getConversationsForTelemetry();
+        lazy.console.debug(`LLM-telemetry -- found ${conversationsToRun.length} records`)
         const telemetryEngine = new lazy.TelemetryEngine();
 
+        lazy.console.debug("Running LLM-telemetry");
         for ( const conversationObj of conversationsToRun ) {
             const telemetryNames = Object.keys(conversationObj.telemetryJobs);
             const conversation = await lazy.ChatStore.findConversationById(conversationObj.convId);
@@ -165,7 +168,7 @@ export class TelemetryScheduler {
             );
         }
     } catch (error) {
-        lazy.console.error("Failed to generate history memories", error);
+        lazy.console.error("Failed to generate llm telemetry records", error);
     } finally {
         Services.prefs.setIntPref(LAST_RUN_PREF, Math.floor(Date.now() / 1000));
         if (!this.#destroyed) {
